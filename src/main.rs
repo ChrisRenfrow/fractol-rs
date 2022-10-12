@@ -6,6 +6,8 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
+use fractol_rs::color::Color;
+
 const WIDTH: u32 = 400;
 const HEIGHT: u32 = 300;
 
@@ -15,38 +17,6 @@ const BASE_COLOR: Color = Color {
     b: 0x00,
     a: 0xff,
 };
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-struct Color {
-    r: u8,
-    g: u8,
-    b: u8,
-    a: u8,
-}
-
-impl Color {
-    fn new(r: u8, g: u8, b: u8, a: u8) -> Self {
-        Self { r, g, b, a }
-    }
-
-    fn add(&self, rhs: &Color) -> Self {
-        Color {
-            r: self.r.wrapping_add(rhs.r),
-            g: self.g.wrapping_add(rhs.g),
-            b: self.b.wrapping_add(rhs.b),
-            a: self.a.wrapping_add(rhs.a),
-        }
-    }
-
-    fn sub(&self, rhs: &Color) -> Self {
-        Color {
-            r: self.r.wrapping_sub(rhs.r),
-            g: self.g.wrapping_sub(rhs.g),
-            b: self.b.wrapping_sub(rhs.b),
-            a: self.a.wrapping_sub(rhs.a),
-        }
-    }
-}
 
 fn color_for_coords(x: f64, y: f64) -> Color {
     let x_ratio = x / (WIDTH * 3) as f64;
@@ -145,16 +115,4 @@ fn main() -> Result<(), Error> {
             _ => (),
         }
     });
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn color_addition() {
-        let lhs = Color::new(0x00, 0x00, 0x00, 0xff);
-        let rhs = Color::new(0xff, 0xff, 0x00, 0x00);
-        assert_eq!(Color::new(0xff, 0xff, 0x00, 0xff), lhs.add(&rhs));
-    }
 }
