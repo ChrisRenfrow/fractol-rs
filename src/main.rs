@@ -1,6 +1,6 @@
 use pixels::{Error, Pixels, SurfaceTexture};
 use winit::{
-    dpi::{LogicalSize, PhysicalPosition, Pixel},
+    dpi::{LogicalSize, PhysicalPosition, PhysicalSize, Pixel},
     event::{DeviceEvent, Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::{Window, WindowBuilder},
@@ -18,9 +18,10 @@ const BASE_COLOR: Color = Color {
     a: 0xff,
 };
 
-fn color_for_coords(x: f64, y: f64) -> Color {
-    let x_ratio = x / (WIDTH * 3) as f64;
-    let y_ratio = y / (HEIGHT * 3) as f64;
+fn color_for_coords(window: &Window, x: f64, y: f64) -> Color {
+    let size = window.inner_size();
+    let x_ratio = x / size.width as f64;
+    let y_ratio = y / size.height as f64;
     BASE_COLOR.add(&Color::new(
         (255.0 * x_ratio) as u8,
         0x00,
@@ -34,11 +35,9 @@ fn main() -> Result<(), Error> {
 
     let window = {
         let size = LogicalSize::new(WIDTH, HEIGHT);
-        let scaled_size = LogicalSize::new(WIDTH * 3, HEIGHT * 3);
         WindowBuilder::new()
             .with_title("fractol-rs")
-            .with_inner_size(scaled_size)
-            .with_min_inner_size(size)
+            .with_inner_size(size)
             .build(&event_loop)
             .unwrap()
     };
@@ -46,7 +45,7 @@ fn main() -> Result<(), Error> {
     let mut pixels = {
         let window_size = window.inner_size();
         let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &window);
-        Pixels::new(WIDTH, HEIGHT, surface_texture)?
+        Pixels::new(window_size.width, window_size.height, surface_texture)?
     };
 
     let mut cursor_pos: PhysicalPosition<f64> = PhysicalPosition { x: 0.0, y: 0.0 };
@@ -85,17 +84,25 @@ fn main() -> Result<(), Error> {
                     },
                 ..
             } => {
-                println!(
-                    "Cursor Moved Event\ndevice id: {:?}, position: {:?}, modifiers: {:?}",
-                    device_id, position, modifiers
-                );
+                // println!(
+                //     "Cursor Moved Event\ndevice id: {:?}, position: {:?}, modifiers: {:?}",
+                //     device_id, position, modifiers
+                // );
                 cursor_pos = position;
+            }
+            Event::WindowEvent {
+                event: WindowEvent::Resized(size),
+                ..
+            } => {
+                println!("Resize event: {:?}", size);
+                pixels.resize_buffer(size.width, size.height);
+                pixels.resize_surface(size.width, size.height);
             }
             Event::MainEventsCleared => {
                 // Clear the pixel buffer
                 let frame = pixels.get_frame();
-                let color = color_for_coords(cursor_pos.x, cursor_pos.y);
-                println!("{:?}", color);
+                let color = color_for_coords(&window, cursor_pos.x, cursor_pos.y);
+                // println!("{:?}", color);
                 for (i, pixel) in frame.chunks_exact_mut(4).enumerate() {
                     pixel[0] = color.r; // R
                     pixel[1] = color.g; // G
