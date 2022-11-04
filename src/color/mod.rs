@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 /// RGBA color value representation with four unsigned 8-bit ints.
 pub struct Color {
     /// Red
@@ -40,6 +40,11 @@ impl Color {
             a: self.a.wrapping_sub(rhs.a),
         }
     }
+
+    /// Calculates a range of colors between self and target returning the result as a vector of colors
+    pub fn gradient_of(&self, target: &Color, steps: u32) -> Vec<Color> {
+        unimplemented!()
+    }
 }
 
 #[cfg(test)]
@@ -72,5 +77,31 @@ mod tests {
         let lhs = Color::new(0x00, 0x00, 0x7f, 0xff);
         let rhs = Color::new(0x80, 0x80, 0xff, 0xff);
         assert_eq!(Color::new(0x80, 0x80, 0x80, 0x00), lhs.sub(&rhs));
+    }
+
+    #[test]
+    #[ignore = "unimplemented"]
+    fn gradient_linear() {
+        let lhs = Color::new(0x00, 0x00, 0x00, 0x00);
+        let rhs = Color::new(0xff, 0xff, 0xff, 0xff);
+        let expected = vec![Color::new(0, 0, 0, 0)]; // pending
+        let actual = lhs.gradient_of(&rhs, 5);
+
+        println!("base: {:?}\ntarget: {:?}", lhs, rhs);
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    #[ignore = "unimplemented"]
+    fn gradient_nonlinear() {
+        let lhs = Color::new(0x00, 0xff, 0xff, 0xff);
+        let rhs = Color::new(0xff, 0x00, 0x00, 0x00);
+        let expected = vec![Color::new(0, 0, 0, 0)]; // pending
+        let actual = lhs.gradient_of(&rhs, 4);
+
+        println!("base: {:?}\ntarget: {:?}", lhs, rhs);
+
+        assert_eq!(expected, actual);
     }
 }
