@@ -8,4 +8,4 @@ edition = "2021"
 [dependencies]
 winit = "0.27"
 pixels = "0.9"
-
+num = "0.4.0"

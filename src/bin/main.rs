@@ -1,33 +1,48 @@
+use num::{complex::ComplexFloat, Complex, Num};
 use pixels::{Error, Pixels, SurfaceTexture};
 use winit::{
-    dpi::{LogicalSize, PhysicalPosition, PhysicalSize, Pixel},
+    dpi::{LogicalPosition, LogicalSize, PhysicalPosition, PhysicalSize, Pixel, Size},
     event::{DeviceEvent, Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::{Window, WindowBuilder},
 };
 
-use fractol_rs::color::Color;
+use fractol_rs::{color::Color, utils::linmap};
 
-const WIDTH: u32 = 400;
-const HEIGHT: u32 = 300;
+const WIDTH: u32 = 600;
+const HEIGHT: u32 = 400;
 
-const BASE_COLOR: Color = Color {
-    r: 0x00,
-    g: 0x00,
-    b: 0x00,
-    a: 0xff,
-};
+fn hello_pixels(pixels: &mut Pixels, window: &Window) {
+    let mut frame = pixels.get_frame();
+    let fg = [0xff, 0xff, 0xff, 0xff];
+    let bg = [0, 0, 0, 0];
 
-fn color_for_coords(window: &Window, x: f64, y: f64) -> Color {
-    let size = window.inner_size();
-    let x_ratio = x / size.width as f64;
-    let y_ratio = y / size.height as f64;
-    BASE_COLOR.add(&Color::new(
-        (255.0 * x_ratio) as u8,
-        0x00,
-        (255.0 * y_ratio) as u8,
-        0x00,
-    ))
+    for (i, pixel) in frame.chunks_exact_mut(4).enumerate() {
+        pixel.copy_from_slice({
+            if i % 100 <= 30 {
+                &fg
+            } else {
+                &bg
+            }
+        });
+    }
+}
+
+fn mandelbrot_iterations(cr: f64, ci: f64, max_iter: usize) -> usize {
+    let mut z = Complex::new(0.0, 0.0);
+    let mut c = Complex::new(cr, ci);
+
+    let mut i: usize = 0;
+
+    for _ in 0..max_iter {
+        i += 1;
+        z = z * z + c;
+        if z.abs() > 4.0 {
+            break;
+        }
+    }
+
+    i
 }
 
 fn main() -> Result<(), Error> {
@@ -48,7 +63,25 @@ fn main() -> Result<(), Error> {
         Pixels::new(window_size.width, window_size.height, surface_texture)?
     };
 
-    let mut cursor_pos: PhysicalPosition<f64> = PhysicalPosition { x: 0.0, y: 0.0 };
+    let height = window.inner_size().height;
+    let width = window.inner_size().width;
+
+    let x_lower = -2.5;
+    let x_upper = 1.05555555;
+    let y_lower = -1.0;
+    let y_upper = 1.0;
+    let mut frame = pixels.get_frame();
+
+    for (i, p) in (0..width * height).zip(frame.chunks_exact_mut(4)) {
+        let x = i % width;
+        let y = i / width;
+        let x1 = linmap(x as f64, (0.0, width as f64), (x_lower, x_upper));
+        let y1 = linmap(y as f64, (0.0, height as f64), (y_lower, y_upper));
+        let it = mandelbrot_iterations(x1, y1, 255) as u8;
+        let color = &[it, it, it, 255];
+
+        p.copy_from_slice(color);
+    }
 
     event_loop.run(move |event, _, control_flow| {
         control_flow.set_poll();
@@ -69,12 +102,7 @@ fn main() -> Result<(), Error> {
                         value,
                     },
                 ..
-            } => {
-                // println!(
-                //     "Axis Motion Event\ndevice id: {:?}, axis: {}, value: {}",
-                //     device_id, axis, value
-                // );
-            }
+            } => {}
             Event::WindowEvent {
                 event:
                     WindowEvent::CursorMoved {
@@ -84,32 +112,18 @@ fn main() -> Result<(), Error> {
                     },
                 ..
             } => {
-                // println!(
-                //     "Cursor Moved Event\ndevice id: {:?}, position: {:?}, modifiers: {:?}",
-                //     device_id, position, modifiers
-                // );
-                cursor_pos = position;
+                // cursor_pos = position;
             }
             Event::WindowEvent {
                 event: WindowEvent::Resized(size),
                 ..
             } => {
-                println!("Resize event: {:?}", size);
-                pixels.resize_buffer(size.width, size.height);
-                pixels.resize_surface(size.width, size.height);
+                // println!("Resize event: {:?}", size);
+                // pixels.resize_buffer(size.width, size.height);
+                // pixels.resize_surface(size.width, size.height);
             }
             Event::MainEventsCleared => {
-                // Clear the pixel buffer
-                let frame = pixels.get_frame();
-                let color = color_for_coords(&window, cursor_pos.x, cursor_pos.y);
-                // println!("{:?}", color);
-                for (i, pixel) in frame.chunks_exact_mut(4).enumerate() {
-                    pixel[0] = color.r; // R
-                    pixel[1] = color.g; // G
-                    pixel[2] = color.b; // B
-                    pixel[3] = color.a; // A
-                }
-
+                // hello_pixels(&mut pixels, &window);
                 if pixels
                     .render()
                     .map_err(|e| eprintln!("pixels.render() failed: {}", e))
@@ -121,5 +135,5 @@ fn main() -> Result<(), Error> {
             }
             _ => (),
         }
-    });
+    })
 }
